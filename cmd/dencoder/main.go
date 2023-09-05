@@ -15,6 +15,12 @@ func main() {
 	}
 
 	logger, err := logging.SetupLogger(cfg.Env)
+	defer func(logger *logging.Logger) {
+		err := logger.Sync()
+		if err != nil {
+			panic(err)
+		}
+	}(logger)
 	if err != nil {
 		panic(fmt.Errorf("cannot setup logger: %w", err))
 	}

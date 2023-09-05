@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"fmt"
+	"html/template"
 	"io"
 	"net/http"
 	"os"
@@ -121,6 +122,37 @@ func ServeVideo(filename string, w http.ResponseWriter, r *http.Request, logger 
 	return nil
 }
 
-func HandleGet(w http.ResponseWriter, r *http.Request, logger *Logger) error {
-	return ServeVideo("/home/niki4smirn/Dev/go/dencoder/video.MP4", w, r, logger)
+func Download(w http.ResponseWriter, r *http.Request, logger *Logger) error {
+	return ServeVideo("video(1).mp4", w, r, logger)
+}
+
+func MainPage(w http.ResponseWriter, r *http.Request, logger *Logger) error {
+	// TODO: add logs
+	tmpl := template.Must(template.ParseFiles("index.html"))
+	err := tmpl.Execute(w, nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func Upload(w http.ResponseWriter, r *http.Request, logger *Logger) error {
+	// TODO: add logs
+	mpfile, _, err := r.FormFile("file")
+	if err != nil {
+		return err
+	}
+	defer mpfile.Close()
+
+	all, err := io.ReadAll(mpfile)
+	if err != nil {
+		return err
+	}
+	logger.Infof("Client uploads file with size %v", len(all))
+	err = os.WriteFile("video(1).mp4", all, 0666)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
