@@ -12,6 +12,7 @@ type Logger = logging.Logger
 
 func Run(cfg *config.Config, logger *Logger) error {
 	router := chi.NewRouter()
+	router.With(SetS3BucketName(cfg.BucketName))
 	// use context middleware (don't forget to use ctx in handler)
 	router.Get("/get", WithLogAndErr(Download, logger))
 	router.Get("/", WithLogAndErr(MainPage, logger))

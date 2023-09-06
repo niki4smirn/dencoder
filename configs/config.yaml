@@ -2,3 +2,6 @@ env: "dev"
 http:
   port: 8080
   timeout: 1s
+
+s3Config:
+  bucketName: dencoder-videos-1337
