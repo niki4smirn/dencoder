@@ -22,11 +22,16 @@ const (
 type Config struct {
 	Env        `yaml:"env" env-required:"true"`
 	HTTPConfig `yaml:"http" env-required:"true"`
+	S3Config   `yaml:"s3Config"`
 }
 
 type HTTPConfig struct {
 	Port    int           `yaml:"port" env-required:"true"`
 	Timeout time.Duration `yaml:"timeout" env-required:"true"`
+}
+
+type S3Config struct {
+	BucketName string `yaml:"bucketName"`
 }
 
 func Load() (*Config, error) {
