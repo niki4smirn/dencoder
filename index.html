@@ -10,5 +10,8 @@
     <input id="file" name="file" type="file" />
     <button>Upload</button>
 </form>
+{{range .Videos}}
+    <p><a href="/get?link={{.Link}}">{{.Filename}}</a></p>
+{{end}}
 </body>
 </html>

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"database/sql"
 	"dencoder/internal/config"
 	"dencoder/internal/logging"
 	"fmt"
@@ -10,13 +11,19 @@ import (
 
 type Logger = logging.Logger
 
-func Run(cfg *config.Config, logger *Logger) error {
+func Run(cfg *config.Config, logger *Logger, db *sql.DB) error {
 	router := chi.NewRouter()
-	router.With(SetS3BucketName(cfg.BucketName))
+	srv := Server{db, &cfg.ServerConfig, logger}
 	// use context middleware (don't forget to use ctx in handler)
-	router.Get("/get", WithLogAndErr(Download, logger))
-	router.Get("/", WithLogAndErr(MainPage, logger))
-	router.Post("/", WithLogAndErr(Upload, logger))
+	router.Get("/get", WithErr(srv.Download, logger))
+	router.Get("/", WithErr(srv.MainPage, logger))
+	router.Post("/", WithErr(srv.Upload, logger))
 
-	return http.ListenAndServe(fmt.Sprintf(":%v", cfg.HTTPConfig.Port), router)
+	return http.ListenAndServe(fmt.Sprintf(":%v", cfg.ServerConfig.Port), router)
+}
+
+type Server struct {
+	db     *sql.DB
+	cfg    *config.ServerConfig
+	logger *Logger
 }
