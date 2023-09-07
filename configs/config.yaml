@@ -1,7 +1,5 @@
 env: "dev"
-http:
+server:
   port: 8080
   timeout: 1s
-
-s3Config:
-  bucketName: dencoder-videos-1337
+  s3bucketName: dencoder-videos-1337

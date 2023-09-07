@@ -20,18 +20,14 @@ const (
 )
 
 type Config struct {
-	Env        `yaml:"env" env-required:"true"`
-	HTTPConfig `yaml:"http" env-required:"true"`
-	S3Config   `yaml:"s3Config"`
+	Env          `yaml:"env" env-required:"true"`
+	ServerConfig `yaml:"server" env-required:"true"`
 }
 
-type HTTPConfig struct {
-	Port    int           `yaml:"port" env-required:"true"`
-	Timeout time.Duration `yaml:"timeout" env-required:"true"`
-}
-
-type S3Config struct {
-	BucketName string `yaml:"bucketName"`
+type ServerConfig struct {
+	Port         int           `yaml:"port" env-required:"true"`
+	Timeout      time.Duration `yaml:"timeout" env-required:"true"`
+	S3BucketName string        `yaml:"s3bucketName"`
 }
 
 func Load() (*Config, error) {

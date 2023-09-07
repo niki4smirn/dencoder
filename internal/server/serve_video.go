@@ -2,12 +2,9 @@ package server
 
 import (
 	"bytes"
-	"dencoder/internal/utils"
 	"fmt"
-	"html/template"
 	"io"
 	"net/http"
-	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -81,7 +78,7 @@ func parseRanges(rangesStr string, fileSize uint64) ([]httpRange, error) {
 	return res, nil
 }
 
-func ServeVideo(content []byte, w http.ResponseWriter, r *http.Request, logger *Logger) error {
+func serveVideo(content []byte, w http.ResponseWriter, r *http.Request, logger *Logger) error {
 	// TODO: add logs
 	logger.Infof("Serving video")
 	fReader := bytes.NewReader(content)
@@ -119,56 +116,18 @@ func ServeVideo(content []byte, w http.ResponseWriter, r *http.Request, logger *
 	return nil
 }
 
-func Download(w http.ResponseWriter, r *http.Request, logger *Logger) error {
-	filename := r.URL.Query().Get("filename")
+func (s *Server) Download(w http.ResponseWriter, r *http.Request) error {
+	logger := s.logger
+	filename := r.URL.Query().Get("link")
 	if filename == "" {
 		return fmt.Errorf("filename is not provided")
 	}
 
 	// Use cache
-	content, err := DownloadVideo(GetS3Bucket(r.Context()).Name, filename, logger)
+	content, err := DownloadVideo(s.cfg.S3BucketName, filename, logger)
 	if err != nil {
 		return err
 	}
 
-	return ServeVideo(content, w, r, logger)
-}
-
-func MainPage(w http.ResponseWriter, r *http.Request, logger *Logger) error {
-	// TODO: add logs
-	tmpl := template.Must(template.ParseFiles("index.html"))
-	err := tmpl.Execute(w, nil)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func Upload(w http.ResponseWriter, r *http.Request, logger *Logger) error {
-	// TODO: add logs
-	mpfile, h, err := r.FormFile("file")
-	if err != nil {
-		return err
-	}
-	defer mpfile.Close()
-
-	all, err := io.ReadAll(mpfile)
-	if err != nil {
-		return err
-	}
-	logger.Infof("Client uploads file with size %v", len(all))
-
-	filename := fmt.Sprintf("upload/%s_%s%s", utils.FilenameWithoutExt(h.Filename), utils.RandSeq(10), filepath.Ext(h.Filename))
-	err = UploadVideo(GetS3Bucket(r.Context()).Name, filename, bytes.NewReader(all), logger)
-	if err != nil {
-		return err
-	}
-
-	w.WriteHeader(200)
-	_, err = w.Write([]byte(filename))
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return serveVideo(content, w, r, logger)
 }

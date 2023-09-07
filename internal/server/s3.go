@@ -9,6 +9,8 @@ import (
 	"io"
 )
 
+// TODO: probably I should somehow reuse connections
+
 func DownloadVideo(bucket, filename string, logger *Logger) ([]byte, error) {
 	sess, err := session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,

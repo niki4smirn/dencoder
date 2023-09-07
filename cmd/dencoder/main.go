@@ -1,10 +1,13 @@
 package main
 
 import (
+	"database/sql"
 	"dencoder/internal/config"
 	"dencoder/internal/logging"
 	"dencoder/internal/server"
 	"fmt"
+	_ "github.com/jackc/pgx/v5/stdlib"
+	"log"
 	"os"
 )
 
@@ -27,7 +30,17 @@ func main() {
 
 	logger.Debug("config", cfg)
 
-	if err := server.Run(cfg, logger); err != nil {
+	pgxUser := os.Getenv("PGX_USER")
+	pgxPass := os.Getenv("PGX_PASS")
+	dbConnStr := fmt.Sprintf("postgresql://%s:%s@localhost/dencoder?sslmode=disable", pgxUser, pgxPass)
+
+	db, err := sql.Open("pgx", dbConnStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	if err := server.Run(cfg, logger, db); err != nil {
 		logger.Error(err)
 		os.Exit(1)
 	}
