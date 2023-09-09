@@ -11,7 +11,7 @@
     <button>Upload</button>
 </form>
 {{range .Videos}}
-    <p><a href="/get?link={{.Link}}">{{.Filename}}</a></p>
+    <p><a href="/get?link={{.Link}}">{{.Filename}}</a> <a href="/delete?link={{.Link}}">Delete</a></p>
 {{end}}
 </body>
 </html>

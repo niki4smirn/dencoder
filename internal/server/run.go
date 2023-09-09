@@ -16,6 +16,7 @@ func Run(cfg *config.Config, logger *Logger, db *sql.DB) error {
 	srv := Server{db, &cfg.ServerConfig, logger}
 	// use context middleware (don't forget to use ctx in handler)
 	router.Get("/get", WithErr(srv.Download, logger))
+	router.Get("/delete", WithErr(srv.Delete, logger))
 	router.Get("/", WithErr(srv.MainPage, logger))
 	router.Post("/", WithErr(srv.Upload, logger))
 
