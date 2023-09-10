@@ -29,7 +29,7 @@ func DownloadVideo(bucket, filename string, logger *Logger) ([]byte, error) {
 			Key:    aws.String(filename),
 		})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to download %q from %q: %w", filename, bucket, err)
 	}
 
 	logger.Infof("Downloaded %s (%v bytes)", filename, numBytes)
@@ -57,5 +57,34 @@ func UploadVideo(bucket, filename string, video io.Reader, logger *Logger) error
 
 	logger.Infof("Successfully uploaded %q to %q\n", filename, bucket)
 
+	return nil
+}
+
+func DeleteVideo(bucket, filename string, logger *Logger) error {
+	sess, err := session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	})
+	if err != nil {
+		return err
+	}
+
+	svc := s3.New(sess)
+
+	_, err = svc.DeleteObject(&s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String(filename)})
+	if err != nil {
+		return fmt.Errorf("unable to delete %q from %q: %w", filename, bucket, err)
+	}
+
+	// maybe without wait? :)
+	err = svc.WaitUntilObjectNotExists(&s3.HeadObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(filename),
+	})
+
+	if err != nil {
+		return fmt.Errorf("unable to delete %q from %q: %w", filename, bucket, err)
+	}
+
+	logger.Infof("Object %s successfully deleted from %s", filename, bucket)
 	return nil
 }
