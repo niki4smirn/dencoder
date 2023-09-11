@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"dencoder/internal/utils"
 	"fmt"
+	"html/template"
 	"io"
 	"net/http"
 	"path/filepath"
@@ -38,6 +39,10 @@ func (s *Server) Upload(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	http.Redirect(w, r, "/", 301)
+	tmpl := template.Must(template.ParseFiles("index.html"))
+	err = tmpl.ExecuteTemplate(w, "video-list-element", VideoInfo{Filename: h.Filename, Link: link})
+	if err != nil {
+		return err
+	}
 	return nil
 }

@@ -38,6 +38,5 @@ func (s *Server) Delete(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	http.Redirect(w, r, "/", 301)
 	return nil
 }

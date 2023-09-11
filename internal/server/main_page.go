@@ -17,7 +17,6 @@ type VideosList struct {
 
 func (s *Server) MainPage(w http.ResponseWriter, r *http.Request) error {
 	// TODO: add logs
-	tmpl := template.Must(template.ParseFiles("index.html"))
 	// TODO: add context
 	rows, err := s.db.Query("SELECT * FROM videos;")
 	if err != nil {
@@ -37,6 +36,7 @@ func (s *Server) MainPage(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
+	tmpl := template.Must(template.ParseFiles("index.html"))
 	err = tmpl.Execute(w, data)
 	if err != nil {
 		return err
