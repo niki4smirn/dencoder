@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"dencoder/internal/storage"
 	"dencoder/internal/utils"
 	"fmt"
 	"html/template"
@@ -26,7 +27,7 @@ func (s *Server) Upload(w http.ResponseWriter, r *http.Request) error {
 	logger.Infof("Client uploads file with size %v", len(all))
 
 	link := fmt.Sprintf("upload/%s_%s%s", utils.FilenameWithoutExt(h.Filename), utils.RandSeq(10), filepath.Ext(h.Filename))
-	err = UploadVideo(s.cfg.S3BucketName, link, bytes.NewReader(all), logger)
+	err = storage.UploadVideo(s.cfg.S3BucketName, link, bytes.NewReader(all), logger)
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"dencoder/internal/storage"
 	"fmt"
 	"net/http"
 )
@@ -33,7 +34,7 @@ func (s *Server) Delete(w http.ResponseWriter, r *http.Request) error {
 		logger.Errorf("Expected 1 row to be affected, actually %v", rowsAffected)
 	}
 
-	err = DeleteVideo(s.cfg.S3BucketName, filename, logger)
+	err = storage.DeleteVideo(s.cfg.S3BucketName, filename, logger)
 	if err != nil {
 		return err
 	}

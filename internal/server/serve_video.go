@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"dencoder/internal/storage"
 	"fmt"
 	"io"
 	"net/http"
@@ -124,7 +125,7 @@ func (s *Server) Download(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	// Use cache
-	content, err := DownloadVideo(s.cfg.S3BucketName, filename, logger)
+	content, err := storage.DownloadVideo(s.cfg.S3BucketName, filename, logger)
 	if err != nil {
 		return err
 	}
