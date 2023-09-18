@@ -16,8 +16,9 @@ type VideosList struct {
 }
 
 func (s *Server) MainPage(w http.ResponseWriter, r *http.Request) error {
-	// TODO: add logs
+	logger := s.logger
 	// TODO: add context
+	logger.Infof("Showing main page")
 	rows, err := s.db.Query("SELECT * FROM videos;")
 	if err != nil {
 		return err
