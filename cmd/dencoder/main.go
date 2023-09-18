@@ -40,6 +40,7 @@ func main() {
 	}
 	defer db.Close()
 
+	// TODO: health check before run server (i.e. pgx and s3 consistency)
 	if err := server.Run(cfg, logger, db); err != nil {
 		logger.Error(err)
 		os.Exit(1)

@@ -117,7 +117,7 @@ func serveVideo(content []byte, w http.ResponseWriter, r *http.Request, logger *
 	return nil
 }
 
-func (s *Server) Download(w http.ResponseWriter, r *http.Request) error {
+func (s *Server) ShowVideo(w http.ResponseWriter, r *http.Request) error {
 	logger := s.logger
 	filename := r.URL.Query().Get("link")
 	if filename == "" {
