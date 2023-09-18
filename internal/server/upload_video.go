@@ -2,8 +2,11 @@ package server
 
 import (
 	"bytes"
+	"dencoder/internal/storage"
+	"dencoder/internal/tx"
 	"dencoder/internal/utils"
 	"fmt"
+	"html/template"
 	"io"
 	"net/http"
 	"path/filepath"
@@ -25,19 +28,50 @@ func (s *Server) Upload(w http.ResponseWriter, r *http.Request) error {
 	logger.Infof("Client uploads file with size %v", len(all))
 
 	link := fmt.Sprintf("upload/%s_%s%s", utils.FilenameWithoutExt(h.Filename), utils.RandSeq(10), filepath.Ext(h.Filename))
-	err = UploadVideo(s.cfg.S3BucketName, link, bytes.NewReader(all), logger)
+
+	transaction := tx.NewTx()
+
+	transaction.Add(func(map[any]any) error {
+		return storage.UploadVideo(s.cfg.S3BucketName, link, bytes.NewReader(all), logger)
+	}, func(map[any]any) error {
+		return storage.DeleteVideo(s.cfg.S3BucketName, link, logger)
+	})
+
+	transaction.Add(func(map[any]any) error {
+		query := "INSERT INTO videos (filename, link) VALUES ($1, $2);"
+		_, err = s.db.Exec(query, h.Filename, link)
+		return err
+	}, func(map[any]any) error {
+		query := "DELETE FROM videos WHERE link = $1;"
+		execRes, err := s.db.Exec(query, link)
+		if err != nil {
+			return err
+		}
+
+		rowsAffected, err := execRes.RowsAffected()
+		if err != nil {
+			return err
+		}
+
+		if rowsAffected != 1 {
+			logger.Errorf("Expected 1 row to be affected, actually %v", rowsAffected)
+		}
+		return nil
+	})
+
+	err, isFatal := transaction.Run()
+	if err != nil {
+		if isFatal {
+			return fmt.Errorf("%w: %w", FatalErr, err)
+		} else {
+			return err
+		}
+	}
+
+	tmpl := template.Must(template.ParseFiles("index.html"))
+	err = tmpl.ExecuteTemplate(w, "video-list-element", VideoInfo{Filename: h.Filename, Link: link})
 	if err != nil {
 		return err
 	}
-
-	// maybe rollback s3 upload in case of db failure
-
-	query := "INSERT INTO videos (filename, link) VALUES ($1, $2);"
-	_, err = s.db.Exec(query, h.Filename, link)
-	if err != nil {
-		return err
-	}
-
-	http.Redirect(w, r, "/", 301)
 	return nil
 }

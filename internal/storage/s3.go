@@ -1,6 +1,7 @@
-package server
+package storage
 
 import (
+	"dencoder/internal/logging"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -8,6 +9,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"io"
 )
+
+type Logger = logging.Logger
 
 // TODO: probably I should somehow reuse connections
 
