@@ -30,9 +30,13 @@ func main() {
 
 	logger.Debug("config", cfg)
 
+	pgxHost := os.Getenv("PGX_HOST")
+	pgxPort := os.Getenv("PGX_PORT")
+	pgxDatabase := os.Getenv("PGX_DATABASE")
 	pgxUser := os.Getenv("PGX_USER")
 	pgxPass := os.Getenv("PGX_PASS")
-	dbConnStr := fmt.Sprintf("postgresql://%s:%s@localhost/dencoder?sslmode=disable", pgxUser, pgxPass)
+    dbConnStr := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+		pgxUser, pgxPass, pgxHost, pgxPort, pgxDatabase)
 
 	db, err := sql.Open("pgx", dbConnStr)
 	if err != nil {
