@@ -32,9 +32,9 @@ func (s *Server) Upload(w http.ResponseWriter, r *http.Request) error {
 	transaction := tx.NewTx()
 
 	transaction.Add(func(map[any]any) error {
-		return storage.UploadVideo(s.cfg.S3BucketName, link, bytes.NewReader(all), logger)
+		return storage.UploadVideo(s.cfg.S3BucketName, s.sess, link, bytes.NewReader(all), logger)
 	}, func(map[any]any) error {
-		return storage.DeleteVideo(s.cfg.S3BucketName, link, logger)
+		return storage.DeleteVideo(s.cfg.S3BucketName, s.sess, link, logger)
 	})
 
 	transaction.Add(func(map[any]any) error {

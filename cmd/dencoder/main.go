@@ -6,9 +6,11 @@ import (
 	"dencoder/internal/logging"
 	"dencoder/internal/server"
 	"fmt"
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"log"
 	"os"
+
+	"github.com/aws/aws-sdk-go/aws/session"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func main() {
@@ -35,7 +37,7 @@ func main() {
 	pgxDatabase := os.Getenv("PGX_DATABASE")
 	pgxUser := os.Getenv("PGX_USER")
 	pgxPass := os.Getenv("PGX_PASS")
-    dbConnStr := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+	dbConnStr := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
 		pgxUser, pgxPass, pgxHost, pgxPort, pgxDatabase)
 
 	db, err := sql.Open("pgx", dbConnStr)
@@ -44,8 +46,14 @@ func main() {
 	}
 	defer db.Close()
 
-	// TODO: health check before run server (i.e. pgx and s3 consistency)
-	if err := server.Run(cfg, logger, db); err != nil {
+	sess, err := session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := server.Run(cfg, logger, db, sess); err != nil {
 		logger.Error(err)
 		os.Exit(1)
 	}

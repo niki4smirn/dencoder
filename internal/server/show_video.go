@@ -1,10 +1,8 @@
 package server
 
 import (
-	"bytes"
 	"dencoder/internal/storage"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -79,11 +77,10 @@ func parseRanges(rangesStr string, fileSize uint64) ([]httpRange, error) {
 	return res, nil
 }
 
-func serveVideo(content []byte, w http.ResponseWriter, r *http.Request, logger *Logger) error {
+func serveVideo(vProvider *VideoProvider, w http.ResponseWriter, r *http.Request, logger *Logger) error {
 	// TODO: add logs
-	logger.Infof("Serving video")
-	fReader := bytes.NewReader(content)
-	fSize := uint64(len(content))
+	logger.Infof("Serving video part")
+	fSize := vProvider.Size()
 
 	rangeHeader := r.Header.Get("Range")
 	var contentRange httpRange
@@ -105,12 +102,13 @@ func serveVideo(content []byte, w http.ResponseWriter, r *http.Request, logger *
 	w.Header().Set("Content-Type", "video/mp4")
 	w.WriteHeader(http.StatusPartialContent)
 
-	_, err := fReader.Seek(int64(contentRange.left), io.SeekStart)
+	content, err := vProvider.Read(contentRange.left, contentRange.right)
 	if err != nil {
 		return err
 	}
-	written, err := io.CopyN(w, fReader, int64(contentRange.len()))
-	if written != int64(contentRange.len()) && err != io.EOF {
+
+	written, err := w.Write(content)
+	if written != int(contentRange.len()) {
 		return err
 	}
 
@@ -121,14 +119,21 @@ func (s *Server) ShowVideo(w http.ResponseWriter, r *http.Request) error {
 	logger := s.logger
 	filename := r.URL.Query().Get("link")
 	if filename == "" {
-		return fmt.Errorf("filename is not provided")
+		return fileNotFound
 	}
 
-	// Use cache
-	content, err := storage.DownloadVideo(s.cfg.S3BucketName, filename, logger)
+	if !s.vCache.Contains(filename) {
+		content, err := storage.DownloadVideo(s.cfg.S3BucketName, s.sess, filename, logger)
+		if err != nil {
+			return err
+		}
+
+		s.vCache.Write(filename, content)
+	}
+	vProvider, err := s.vCache.GetProvdier(filename)
 	if err != nil {
 		return err
 	}
 
-	return serveVideo(content, w, r, logger)
+	return serveVideo(vProvider, w, r, logger)
 }

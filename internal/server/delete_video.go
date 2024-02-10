@@ -18,7 +18,7 @@ func (s *Server) Delete(w http.ResponseWriter, r *http.Request) error {
 	transaction := tx.NewTx()
 
 	transaction.Add(func(map[any]any) error {
-		return storage.DeleteVideo(s.cfg.S3BucketName, link, logger)
+        return storage.DeleteVideo(s.cfg.S3BucketName, s.sess, link, logger)
 	}, func(map[any]any) error {
 		// it's strange to download video before deleting it just to have a chance of recovery
 		return fmt.Errorf("reverting video deletion is not supported")

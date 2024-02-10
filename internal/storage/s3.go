@@ -12,16 +12,7 @@ import (
 
 type Logger = logging.Logger
 
-// TODO: probably I should somehow reuse connections
-
-func DownloadVideo(bucket, filename string, logger *Logger) ([]byte, error) {
-	sess, err := session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	})
-	if err != nil {
-		return nil, err
-	}
-
+func DownloadVideo(bucket string, sess *session.Session, filename string, logger *Logger) ([]byte, error) {
 	downloader := s3manager.NewDownloader(sess)
 
 	buf := aws.NewWriteAtBuffer([]byte{})
@@ -40,16 +31,9 @@ func DownloadVideo(bucket, filename string, logger *Logger) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func UploadVideo(bucket, filename string, video io.Reader, logger *Logger) error {
-	sess, err := session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	})
-	if err != nil {
-		return err
-	}
-
+func UploadVideo(bucket string, sess *session.Session, filename string, video io.Reader, logger *Logger) error {
 	uploader := s3manager.NewUploader(sess)
-	_, err = uploader.Upload(&s3manager.UploadInput{
+	_, err := uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(filename),
 		Body:   video,
@@ -63,17 +47,13 @@ func UploadVideo(bucket, filename string, video io.Reader, logger *Logger) error
 	return nil
 }
 
-func DeleteVideo(bucket, filename string, logger *Logger) error {
-	sess, err := session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	})
-	if err != nil {
-		return err
-	}
-
+func DeleteVideo(bucket string, sess *session.Session, filename string, logger *Logger) error {
 	svc := s3.New(sess)
 
-	_, err = svc.DeleteObject(&s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String(filename)})
+	_, err := svc.DeleteObject(&s3.DeleteObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(filename)},
+	)
 	if err != nil {
 		return fmt.Errorf("unable to delete %q from %q: %w", filename, bucket, err)
 	}
