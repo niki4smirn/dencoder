@@ -8,15 +8,13 @@ Dencoder is a learning project, a video storing, and streaming service built usi
 
 - **Video Streaming:** Users can watch videos through a seamless streaming experience. Dencoder uses HTMX to provide a dynamic and fast-loading video player interface.
 
-- **Database Integration:** Video metadata and user information are stored in a PostgreSQL database, making it easy to manage and organize your video content.
-
 ## Getting Started
 
-Follow these steps to set up and run Dencoder on your local machine:
+Follow these steps to set up and run Dencoder:
 
 1. **Clone the Repository:** 
    ```bash
-   git clone https://github.com/your-username/dencoder.git
+   git clone https://github.com/niki4smirn/dencoder.git
    cd dencoder
    ```
 
@@ -30,14 +28,10 @@ Follow these steps to set up and run Dencoder on your local machine:
    Create the necessary PostgreSQL database table by running the provided SQL script. You can find it in the `database` directory.
 
 5. **Run:**
-   Run the Go application (don't forget to set your config path and postgresql credentials as env variables):
+   Run the Go application (don't forget to set all env variables):
    ```bash
-   CONFIG_PATH=... PGX_PASS=... PGX_USER=... go run ./...
+   go run ./...
    ```
-
-6. **Access Dencoder:**
-   Open your web browser and navigate to `http://localhost:8080` to access the Dencoder web interface.
-
 ## Screenshots
 
 ### Minimalistic main page :)

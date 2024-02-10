@@ -117,6 +117,7 @@ func serveVideo(vProvider *VideoProvider, w http.ResponseWriter, r *http.Request
 }
 
 func (s *Server) ShowVideo(w http.ResponseWriter, r *http.Request) error {
+    s.logger.Info("Showing video")
 	logger := s.logger
 	filename := r.URL.Query().Get("link")
 	if filename == "" {
