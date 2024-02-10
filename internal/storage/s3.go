@@ -71,3 +71,14 @@ func DeleteVideo(bucket string, sess *session.Session, filename string, logger *
 	logger.Infof("Object %s successfully deleted from %s", filename, bucket)
 	return nil
 }
+
+func VideosCount(bucket string, sess *session.Session, logger *Logger) (int, error) {
+	svc := s3.New(sess)
+
+	objects, err := svc.ListObjects(&s3.ListObjectsInput{Bucket: &bucket})
+	if err != nil {
+		return 0, err
+	}
+
+	return len(objects.Contents), nil
+}

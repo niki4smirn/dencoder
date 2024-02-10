@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"dencoder/internal/config"
 	"dencoder/internal/logging"
+	"dencoder/internal/storage"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -14,8 +16,32 @@ import (
 
 type Logger = logging.Logger
 
+var inconsistentDBsState = errors.New("inconsistent DBs state")
+
+func DbConsistencyCheck(cfg *config.Config, logger *Logger, db *sql.DB, sess *session.Session) error {
+	s3Cnt, err := storage.VideosCount(cfg.S3BucketName, sess, logger)
+	if err != nil {
+		return err
+	}
+
+	var pgxCnt int
+	err = db.QueryRow("SELECT COUNT(*) FROM videos;").Scan(&pgxCnt)
+	if err != nil {
+		return err
+	}
+
+	if s3Cnt != pgxCnt {
+		return inconsistentDBsState
+	}
+	return nil
+}
+
 func Run(cfg *config.Config, logger *Logger, db *sql.DB, sess *session.Session) error {
-	// TODO: health check before run server (i.e. pgx and s3 consistency)
+	err := DbConsistencyCheck(cfg, logger, db, sess)
+	if err != nil {
+		return err
+	}
+
 	router := chi.NewRouter()
 	cache := &VideosCache{cache_data: expirable.NewLRU[string, VideoProvider](
 		cfg.VideoCache.Size, nil, cfg.VideoCache.TTL,
