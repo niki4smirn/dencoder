@@ -22,12 +22,18 @@ const (
 type Config struct {
 	Env          `yaml:"env" env-required:"true"`
 	ServerConfig `yaml:"server" env-required:"true"`
+	VideoCache   `yaml:"video_cache" env-required:"true"`
 }
 
 type ServerConfig struct {
 	Port         int           `yaml:"port" env-required:"true"`
 	Timeout      time.Duration `yaml:"timeout" env-required:"true"`
-	S3BucketName string        `yaml:"s3bucketName"`
+	S3BucketName string        `yaml:"s3bucketName" env-required:"true"`
+}
+
+type VideoCache struct {
+	Size int           `yaml:"size" env-required:"true"`
+	TTL  time.Duration `yaml:"ttl" env-required:"true"`
 }
 
 func Load() (*Config, error) {

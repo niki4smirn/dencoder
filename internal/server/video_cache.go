@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"errors"
+	"github.com/hashicorp/golang-lru/v2/expirable"
 )
 
 type batches [][]byte
@@ -12,7 +13,7 @@ type VideoProvider struct {
 }
 
 type VideosCache struct {
-	m map[string]VideoProvider
+	cache_data *expirable.LRU[string, VideoProvider]
 }
 
 var fileNotFound = errors.New("file not found")
@@ -27,16 +28,15 @@ func intoBatches(content []byte) batches {
 }
 
 func (v *VideosCache) Write(filename string, content []byte) {
-	v.m[filename] = VideoProvider{bs: intoBatches(content)}
+	v.cache_data.Add(filename, VideoProvider{bs: intoBatches(content)})
 }
 
 func (v *VideosCache) Contains(filename string) bool {
-	_, found := v.m[filename]
-	return found
+	return v.cache_data.Contains(filename)
 }
 
 func (v *VideosCache) GetProvdier(filename string) (*VideoProvider, error) {
-	vProvider, found := v.m[filename]
+	vProvider, found := v.cache_data.Get(filename)
 	if !found {
 		return nil, fileNotFound
 	}

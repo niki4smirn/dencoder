@@ -79,7 +79,6 @@ func parseRanges(rangesStr string, fileSize uint64) ([]httpRange, error) {
 
 func serveVideo(vProvider *VideoProvider, w http.ResponseWriter, r *http.Request, logger *Logger) error {
 	// TODO: add logs
-	logger.Infof("Serving video part")
 	fSize := vProvider.Size()
 
 	rangeHeader := r.Header.Get("Range")
@@ -95,6 +94,8 @@ func serveVideo(vProvider *VideoProvider, w http.ResponseWriter, r *http.Request
 		// WARNING: probably something criminal here
 		contentRange = contentRanges[0]
 	}
+
+	logger.Infof("Serving video part (%v bytes)", contentRange.len())
 
 	w.Header().Set("Accept-Ranges", "bytes")
 	w.Header().Set("Content-Length", strconv.FormatUint(contentRange.len(), 10))
