@@ -8,6 +8,7 @@ import (
 )
 
 func (s *Server) Delete(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
 	logger := s.logger
 	link := r.URL.Query().Get("link")
 	if link == "" {
@@ -18,7 +19,7 @@ func (s *Server) Delete(w http.ResponseWriter, r *http.Request) error {
 	transaction := tx.NewTx()
 
 	transaction.Add(func(map[any]any) error {
-        return storage.DeleteVideo(s.cfg.S3BucketName, s.sess, link, logger)
+		return storage.DeleteVideo(ctx, s.cfg.S3BucketName, s.sess, link, logger)
 	}, func(map[any]any) error {
 		// it's strange to download video before deleting it just to have a chance of recovery
 		return fmt.Errorf("reverting video deletion is not supported")
@@ -26,10 +27,12 @@ func (s *Server) Delete(w http.ResponseWriter, r *http.Request) error {
 
 	const FilenameCommonDataKey = "filename"
 	transaction.Add(func(commonData map[any]any) error {
+        // unfortunately I need to exec two sequential queries here in order
+        // to save filename for potential rollback
 		query := "SELECT filename FROM videos WHERE link = $1"
 
 		var filename string
-		err := s.db.QueryRow(query, link).Scan(&filename)
+		err := s.db.QueryRowContext(ctx, query, link).Scan(&filename)
 		if err != nil {
 			return err
 		}
@@ -63,7 +66,7 @@ func (s *Server) Delete(w http.ResponseWriter, r *http.Request) error {
 			return fmt.Errorf("commonData's filename field is not a string")
 		}
 		query := "INSERT INTO videos (filename, link) VALUES ($1, $2);"
-		_, err := s.db.Exec(query, filename, link)
+		_, err := s.db.ExecContext(ctx, query, filename, link)
 		return err
 	})
 
@@ -75,6 +78,8 @@ func (s *Server) Delete(w http.ResponseWriter, r *http.Request) error {
 			return err
 		}
 	}
+
+    s.vInfoCache.Videos = nil
 
 	return nil
 }

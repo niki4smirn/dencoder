@@ -6,7 +6,6 @@ import (
 )
 
 // TODO: TEST!!!
-// TODO: add context to transaction
 
 type fn = func(map[any]any) error
 

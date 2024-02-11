@@ -11,6 +11,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/hashicorp/golang-lru/v2/expirable"
 )
 
@@ -46,21 +47,34 @@ func Run(cfg *config.Config, logger *Logger, db *sql.DB, sess *session.Session) 
 	cache := &VideosCache{cache_data: expirable.NewLRU[string, VideoProvider](
 		cfg.VideoCache.Size, nil, cfg.VideoCache.TTL,
 	)}
-	srv := Server{db, &cfg.ServerConfig, logger, sess, cache}
-	// TODO: use context middleware (don't forget to use ctx in handler)
-	router.Get("/get", WithErr(srv.ShowVideo, logger))
-	router.Get("/delete", WithErr(srv.Delete, logger))
-	router.Get("/", WithErr(srv.MainPage, logger))
-	router.Post("/", WithErr(srv.Upload, logger))
+	srv := Server{db, &cfg.ServerConfig, logger, sess, cache, &VideosList{}}
+	// TODO: Maybe use Compress middleware
+	router.Use(middleware.Logger)
+	router.Use(middleware.Recoverer)
+	router.Get("/get", WithErr(WithTimeout(cfg.Timeout, srv.ShowVideo), logger))
+	router.Get("/delete", WithErr(WithTimeout(cfg.Timeout, srv.Delete), logger))
+	router.Get("/", WithErr(WithTimeout(cfg.Timeout, srv.MainPage), logger))
+	router.Post("/", WithErr(WithTimeout(cfg.Timeout, srv.Upload), logger))
 
 	logger.Infof("Listening http://localhost:%v", cfg.ServerConfig.Port)
 	return http.ListenAndServe(fmt.Sprintf(":%v", cfg.ServerConfig.Port), router)
 }
 
+type VideoInfo struct {
+	id       int
+	Link     string
+	Filename string
+}
+
+type VideosList struct {
+	Videos []VideoInfo
+}
+
 type Server struct {
-	db     *sql.DB
-	cfg    *config.ServerConfig
-	logger *Logger
-	sess   *session.Session
-	vCache *VideosCache
+	db         *sql.DB
+	cfg        *config.ServerConfig
+	logger     *Logger
+	sess       *session.Session
+	vCache     *VideosCache
+	vInfoCache *VideosList
 }

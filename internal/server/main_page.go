@@ -5,40 +5,32 @@ import (
 	"net/http"
 )
 
-type VideoInfo struct {
-	id       int
-	Link     string
-	Filename string
-}
-
-type VideosList struct {
-	Videos []VideoInfo
-}
-
 func (s *Server) MainPage(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
 	logger := s.logger
-	// TODO: add context
 	logger.Infof("Showing main page")
-	rows, err := s.db.Query("SELECT * FROM videos;")
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
+	if s.vInfoCache.Videos == nil {
 
-	data := VideosList{}
-	for rows.Next() {
-		var info VideoInfo
-		if err = rows.Scan(&info.id, &info.Filename, &info.Link); err != nil {
+		rows, err := s.db.QueryContext(ctx, "SELECT * FROM videos;")
+		if err != nil {
 			return err
 		}
-		data.Videos = append(data.Videos, info)
-	}
-	if err = rows.Err(); err != nil {
-		return err
+		defer rows.Close()
+
+		for rows.Next() {
+			var info VideoInfo
+			if err = rows.Scan(&info.id, &info.Filename, &info.Link); err != nil {
+				return err
+			}
+			s.vInfoCache.Videos = append(s.vInfoCache.Videos, info)
+		}
+		if err = rows.Err(); err != nil {
+			return err
+		}
 	}
 
 	tmpl := template.Must(template.ParseFiles("index.html"))
-	err = tmpl.Execute(w, data)
+	err := tmpl.Execute(w, s.vInfoCache)
 	if err != nil {
 		return err
 	}

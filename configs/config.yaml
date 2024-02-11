@@ -2,7 +2,7 @@ env: "dev"
 
 server:
   port: 8080
-  timeout: 1s
+  timeout: 10s
   s3bucketName: dencoder-videos-1337
 
 video_cache:

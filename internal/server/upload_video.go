@@ -13,6 +13,7 @@ import (
 )
 
 func (s *Server) Upload(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
 	// TODO: add logs
 	logger := s.logger
 	mpfile, h, err := r.FormFile("file")
@@ -25,6 +26,9 @@ func (s *Server) Upload(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
+    if ctx.Err() != nil {
+        return err
+    }
 	logger.Infof("Client uploads file with size %v", len(all))
 
 	link := fmt.Sprintf("upload/%s_%s%s", utils.FilenameWithoutExt(h.Filename), utils.RandSeq(10), filepath.Ext(h.Filename))
@@ -32,18 +36,18 @@ func (s *Server) Upload(w http.ResponseWriter, r *http.Request) error {
 	transaction := tx.NewTx()
 
 	transaction.Add(func(map[any]any) error {
-		return storage.UploadVideo(s.cfg.S3BucketName, s.sess, link, bytes.NewReader(all), logger)
+		return storage.UploadVideo(ctx, s.cfg.S3BucketName, s.sess, link, bytes.NewReader(all), logger)
 	}, func(map[any]any) error {
-		return storage.DeleteVideo(s.cfg.S3BucketName, s.sess, link, logger)
+		return storage.DeleteVideo(ctx, s.cfg.S3BucketName, s.sess, link, logger)
 	})
 
 	transaction.Add(func(map[any]any) error {
 		query := "INSERT INTO videos (filename, link) VALUES ($1, $2);"
-		_, err = s.db.Exec(query, h.Filename, link)
+		_, err = s.db.ExecContext(ctx, query, h.Filename, link)
 		return err
 	}, func(map[any]any) error {
 		query := "DELETE FROM videos WHERE link = $1;"
-		execRes, err := s.db.Exec(query, link)
+		execRes, err := s.db.ExecContext(ctx, query, link)
 		if err != nil {
 			return err
 		}
@@ -73,5 +77,7 @@ func (s *Server) Upload(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
+
+    s.vInfoCache.Videos = nil
 	return nil
 }

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"dencoder/internal/storage"
 	"fmt"
 	"net/http"
@@ -77,7 +78,7 @@ func parseRanges(rangesStr string, fileSize uint64) ([]httpRange, error) {
 	return res, nil
 }
 
-func serveVideo(vProvider *VideoProvider, w http.ResponseWriter, r *http.Request, logger *Logger) error {
+func serveVideo(ctx context.Context, vProvider *VideoProvider, w http.ResponseWriter, r *http.Request, logger *Logger) error {
 	// TODO: add logs
 	fSize := vProvider.Size()
 
@@ -112,12 +113,16 @@ func serveVideo(vProvider *VideoProvider, w http.ResponseWriter, r *http.Request
 	if written != int(contentRange.len()) {
 		return err
 	}
+	if ctx.Err() != nil {
+		return err
+	}
 
 	return nil
 }
 
 func (s *Server) ShowVideo(w http.ResponseWriter, r *http.Request) error {
-    s.logger.Info("Showing video")
+	ctx := r.Context()
+	s.logger.Info("Showing video")
 	logger := s.logger
 	filename := r.URL.Query().Get("link")
 	if filename == "" {
@@ -125,7 +130,9 @@ func (s *Server) ShowVideo(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	if !s.vCache.Contains(filename) {
-		content, err := storage.DownloadVideo(s.cfg.S3BucketName, s.sess, filename, logger)
+		// first load may be really slow
+		// pass ctx
+		content, err := storage.DownloadVideo(ctx, s.cfg.S3BucketName, s.sess, filename, logger)
 		if err != nil {
 			return err
 		}
@@ -137,5 +144,5 @@ func (s *Server) ShowVideo(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return serveVideo(vProvider, w, r, logger)
+	return serveVideo(ctx, vProvider, w, r, logger)
 }

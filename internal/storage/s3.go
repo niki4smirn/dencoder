@@ -1,23 +1,26 @@
 package storage
 
 import (
+	"context"
 	"dencoder/internal/logging"
 	"fmt"
+	"io"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"io"
 )
 
 type Logger = logging.Logger
 
-func DownloadVideo(bucket string, sess *session.Session, filename string, logger *Logger) ([]byte, error) {
+func DownloadVideo(ctx context.Context, bucket string, sess *session.Session, filename string, logger *Logger) ([]byte, error) {
 	downloader := s3manager.NewDownloader(sess)
 
 	buf := aws.NewWriteAtBuffer([]byte{})
 
-	numBytes, err := downloader.Download(buf,
+	numBytes, err := downloader.DownloadWithContext(ctx,
+		buf,
 		&s3.GetObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String(filename),
@@ -31,9 +34,9 @@ func DownloadVideo(bucket string, sess *session.Session, filename string, logger
 	return buf.Bytes(), nil
 }
 
-func UploadVideo(bucket string, sess *session.Session, filename string, video io.Reader, logger *Logger) error {
+func UploadVideo(ctx context.Context, bucket string, sess *session.Session, filename string, video io.Reader, logger *Logger) error {
 	uploader := s3manager.NewUploader(sess)
-	_, err := uploader.Upload(&s3manager.UploadInput{
+	_, err := uploader.UploadWithContext(ctx, &s3manager.UploadInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(filename),
 		Body:   video,
@@ -47,10 +50,10 @@ func UploadVideo(bucket string, sess *session.Session, filename string, video io
 	return nil
 }
 
-func DeleteVideo(bucket string, sess *session.Session, filename string, logger *Logger) error {
+func DeleteVideo(ctx context.Context, bucket string, sess *session.Session, filename string, logger *Logger) error {
 	svc := s3.New(sess)
 
-	_, err := svc.DeleteObject(&s3.DeleteObjectInput{
+	_, err := svc.DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(filename)},
 	)
